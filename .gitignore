@@ -1,0 +1,23 @@
+# Binaries
+budget-divider
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# SQLite data
+/data/
+*.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
