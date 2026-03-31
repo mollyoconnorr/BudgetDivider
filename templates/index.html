@@ -1,44 +1,346 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Budget Divider</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Budget Divider</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+        }
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: #0f172a;
+        }
+        p.lead {
+            margin: 0;
+            color: #475569;
+            font-size: 1rem;
+        }
+        .nav {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.6rem;
+        }
+        .tab {
+            border-radius: 999px;
+            padding: 0.45rem 1rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .tab.active {
+            border-color: #38bdf8;
+            background: #e0f2fe;
+            color: #0f172a;
+        }
+        .summary,
+        .items,
+        .forms {
+            margin-bottom: 2rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+        }
+        .card,
+        .item,
+        .form-card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 1.4rem 1.5rem;
+            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+        .balance-card {
+            border-radius: 14px;
+            padding: 1rem;
+            background: #f1f5f9;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            text-align: center;
+        }
+        .balance-card strong {
+            display: block;
+            font-size: 1.3rem;
+            margin-top: 0.3rem;
+            color: #0f172a;
+        }
+        .item header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+        }
+        .item header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #0f172a;
+        }
+        .item header span {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .item .share,
+        .item .participants {
+            margin: 0.25rem 0;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        .item-status {
+            margin: 0.35rem 0 0;
+            font-weight: 700;
+        }
+        .item-status.paid {
+            color: #16a34a;
+        }
+        .item-status.pending {
+            color: #d97706;
+        }
+        ul.settlements {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+            font-size: 0.95rem;
+        }
+        ul.settlements li {
+            margin-bottom: 0.35rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+        label span {
+            display: block;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        textarea {
+            min-height: 90px;
+        }
+        .participant-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+        .participant-grid label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            background: rgba(248, 250, 252, 0.8);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .user-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .user-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .user-row form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            align-items: flex-start;
+            margin: 0;
+        }
+        .user-row-actions {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .user-row form button {
+            margin-top: 0;
+        }
+        .user-edit input {
+            min-width: 150px;
+        }
+        .user-delete {
+            display: none;
+        }
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 0.95rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #34d399, #60a5fa);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.25);
+            transition: transform 0.2s ease;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+            background: #94a3b8;
+        }
+        .save-button {
+            background: #34d399;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
+        }
+        .delete-btn {
+            background: #ef4444;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.25);
+        }
+        .edit-link {
+            border-radius: 10px;
+            padding: 0.55rem 1rem;
+            background: rgba(59, 130, 246, 0.12);
+            color: #1d4ed8;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .warning-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .warning-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .warning-dialog {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.1rem 1.6rem;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            text-align: center;
+        }
+        .warning-dialog p {
+            margin: 0 0 1rem;
+            font-weight: 600;
+            color: #b91c1c;
+        }
+        .warning-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .warning-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .warning-dialog {
+            background: #111827;
+            border-radius: 20px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            max-width: 360px;
+            text-align: center;
+        }
+        .warning-dialog p {
+            margin: 0 0 1rem;
+            font-weight: 600;
+            color: #fef3c7;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+    </style>
 </head>
-<body data-active-tab="{{.ActiveTab}}">
+        <body data-active-tab="{{.ActiveTab}}">
     <div class="page">
-        <header class="page-header">
-            <p class="eyebrow">Budget Divider</p>
-            <h1>Keep all of your broke college friends happy</h1>
-            <p class="subhead">Add shared expenses, record payments, and let the app tell you who owes whom.</p>
-            <div class="tab-group">
-                <button class="tab" data-target="budget-tab">Budget</button>
-                <button class="tab" data-target="users-tab">Manage users</button>
+        <header>
+            <p class="lead">Budget Divider</p>
+            <h1>Track shared expenses with clarity</h1>
+            <p class="lead">Add items, record payments, and keep all of your broke college friends happy.</p>
+            <div class="nav">
+                <div class="tabs">
+                    <button class="tab active" data-target="budget-tab">Budget</button>
+                    <button class="tab" data-target="users-tab">Manage users</button>
+                </div>
             </div>
         </header>
 
-        <section id="budget-tab" class="tab-panel active">
-            <div class="summary-card">
-                <div class="card-heading">
+        <div id="budget-tab" class="tab-panel active">
+            <section class="summary">
+                <div class="card">
                     <h2>Person balances</h2>
-                </div>
-                <div class="balance-grid">
-                    {{range .BalanceList}}
-                    <div class="balance-chip">
-                        <p>{{.Name}}</p>
-                        <strong>{{formatBalance .Balance}}</strong>
+                    <div class="grid">
+                        {{range .BalanceList}}
+                        <div class="balance-card">
+                            <p>{{.Name}}</p>
+                            <strong>{{formatBalance .Balance}}</strong>
+                        </div>
+                        {{else}}
+                        <div class="muted">No items to be paid for.</div>
+                        {{end}}
                     </div>
-                    {{else}}
-                    <p class="muted">No items to be paid for.</p>
-                    {{end}}
-                </div>
-                <div class="settlements">
-                    <h3>Suggested settlements</h3>
-                    <ul>
+                    <h3 style="margin-top:1rem;">Suggested settlements</h3>
+                    <ul class="settlements">
                         {{range .Settlements}}
                         <li>{{.}}</li>
                         {{else}}
@@ -46,33 +348,32 @@
                         {{end}}
                     </ul>
                 </div>
-            </div>
+            </section>
 
-            <div class="items-panel">
-                <div class="section-heading">
-                    <h2>Items</h2>
-                </div>
-                <div class="item-grid">
+            <section class="items">
+                <h2>Items</h2>
+                <div class="grid">
                     {{range .Items}}
-                    <article class="item-card">
+                    <article class="item">
                         <header>
                             <div>
                                 <h3>{{.Title}}</h3>
                                 {{if .Settled}}
-                                <span class="status paid">Paid in full</span>
-                                {{else}}
-                                <span class="status pending">Pending payment</span>
+                                <span class="chip muted">Settled</span>
                                 {{end}}
                             </div>
-                            <span class="cost">{{formatCurrency .Cost}}</span>
+                            <span>{{formatCurrency .Cost}}</span>
                         </header>
-                        <p class="description">{{.Description}}</p>
+                        <p>{{.Description}}</p>
                         <p class="participants">Participants: {{range $index, $p := .Participants}}{{if $index}}, {{end}}{{$p}}{{end}}</p>
                         <p class="share">Per head: {{formatCurrency (perShare .)}}</p>
+                        <p class="item-status {{if .Settled}}paid{{else}}pending{{end}}">
+                            {{if .Settled}}Paid in full{{else}}Pending payment{{end}}
+                        </p>
                         {{if .Settled}}
                         <p class="muted">All payments cleared for this item.</p>
                         {{else}}
-                        <ul class="payment-list">
+                        <ul>
                             {{range $payment := index $.Payments .ID}}
                             <li>{{$payment.User}} paid {{formatCurrency $payment.Amount}}</li>
                             {{else}}
@@ -85,119 +386,115 @@
                         </div>
                     </article>
                     {{else}}
-                    <article class="empty-card">
-                        <p class="muted">Add a new shared expense to get started.</p>
+                    <article class="item">
+                        <p class="muted">Add a new shared expense to get the canvas started.</p>
                     </article>
                     {{end}}
                 </div>
-            </div>
+            </section>
 
-            <div class="forms-grid">
-                <div class="form-card">
-                    <div class="form-heading">
+            <section class="forms">
+                <div class="grid">
+                    <div class="form-card">
                         <h2>Add item</h2>
-                    </div>
-                    <form method="post" action="/item">
-                        <label>
-                            <span>Title</span>
-                            <input required type="text" name="title" placeholder="Weekend groceries" maxlength="30" />
-                        </label>
-                        <label>
-                            <span>Description</span>
-                            <textarea name="description" rows="2" placeholder="Snacks + drinks for the retreat" maxlength="200"></textarea>
-                        </label>
-                        <label>
-                            <span>Cost</span>
-                            <input required min="0.1" step="0.01" type="number" name="cost" placeholder="120" />
-                        </label>
-                        <div class="participant-section">
-                            <p class="muted-field">Participants</p>
-                            <div class="participant-grid">
-                                {{range .Users}}
-                                <label class="participant-pill">
-                                    <input type="checkbox" name="participants" value="{{.ID}}" />
-                                    {{.Name}}
-                                </label>
-                                {{else}}
-                                <span class="muted">Add friends first.</span>
-                                {{end}}
-                            </div>
-                        </div>
-                        <button type="submit" class="primary" {{if not .Users}}disabled{{end}}>Add item</button>
-                    </form>
-                </div>
-                <div class="form-card">
-                    <div class="form-heading">
-                        <h2>Record a payment</h2>
-                    </div>
-                    <form method="post" action="/payment">
-                        <label>
-                            <span>Item</span>
-                            <select required name="item">
-                                {{range .Items}}
-                                <option value="{{.ID}}">{{.Title}} ({{formatCurrency .Cost}})</option>
-                                {{else}}
-                                <option disabled>No items yet</option>
-                                {{end}}
-                            </select>
-                        </label>
-                        <label>
-                            <span>Payer</span>
-                            <select required name="user"></select>
-                        </label>
-                        <label>
-                            <span>Amount</span>
-                            <input required min="0.1" step="0.01" type="number" name="amount" placeholder="60" />
-                        </label>
-                        <button type="submit" class="primary" {{if or (not .Users) (not .Items)}}disabled{{end}}>Record payment</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-
-        <section id="users-tab" class="tab-panel">
-            <div class="forms-grid">
-                <div class="form-card">
-                    <div class="form-heading">
-                        <h2>Add friends</h2>
-                    </div>
-                    <form method="post" action="/user">
-                        <label>
-                            <span>Name</span>
-                            <input required type="text" name="name" maxlength="50" placeholder="Bob" />
-                        </label>
-                        <button type="submit" class="primary">Create friend</button>
-                    </form>
-                </div>
-                <div class="form-card">
-                    <div class="form-heading">
-                        <h2>Edit friends</h2>
-                    </div>
-                    <div class="user-rows">
-                        {{range .Users}}
-                        <div class="user-row">
-                            <form method="post" action="/user/edit" class="user-edit">
-                                <input type="hidden" name="id" value="{{.ID}}" />
-                                <label>
-                                    <span class="muted">Name</span>
-                                    <input required type="text" name="name" value="{{.Name}}" maxlength="50" />
-                                </label>
-                                <div class="user-row-actions">
-                                    <button type="submit" class="primary">Save</button>
-                                    <button type="submit" form="delete-{{.ID}}" class="danger">Delete</button>
+                        <form method="post" action="/item">
+                            <label>
+                                <span>Title</span>
+                                <input required type="text" name="title" placeholder="Weekend groceries" maxlength="30" />
+                            </label>
+                            <label>
+                                <span>Description</span>
+                                <textarea name="description" rows="2" placeholder="Snacks + drinks for the retreat" maxlength="200"></textarea>
+                            </label>
+                            <label>
+                                <span>Cost</span>
+                                <input required min="0.1" step="0.01" type="number" name="cost" placeholder="120" />
+                            </label>
+                            <div>
+                                <p class="muted" style="margin-bottom:0.35rem;">Participants</p>
+                                <div class="participant-grid">
+                                    {{range .Users}}
+                                    <label>
+                                        <input type="checkbox" name="participants" value="{{.ID}}" />
+                                        {{.Name}}
+                                    </label>
+                                    {{else}}
+                                    <span class="muted">Add a friend first.</span>
+                                    {{end}}
                                 </div>
-                            </form>
-                            <form method="post" action="/user/delete" id="delete-{{.ID}}" class="user-delete">
-                                <input type="hidden" name="id" value="{{.ID}}" />
-                            </form>
-                        </div>
-                        {{else}}
-                        <p class="muted">Add friends to see them here.</p>
-                        {{end}}
+                            </div>
+                            <button type="submit" {{if not .Users}}disabled{{end}}>Add item</button>
+                        </form>
+                    </div>
+                    <div class="form-card">
+                        <h2>Record a payment</h2>
+                        <form method="post" action="/payment">
+                            <label>
+                                <span>Item</span>
+                                <select required name="item">
+                                    {{range .Items}}
+                                    <option value="{{.ID}}">{{.Title}} ({{formatCurrency .Cost}})</option>
+                                    {{else}}
+                                    <option disabled>No items yet</option>
+                                    {{end}}
+                                </select>
+                            </label>
+                            <label>
+                                <span>Payer</span>
+                                <select required name="user"></select>
+                            </label>
+                            <label>
+                                <span>Amount</span>
+                                <input required min="0.1" step="0.01" type="number" name="amount" placeholder="60" />
+                            </label>
+                            <button type="submit" {{if or (not .Users) (not .Items)}}disabled{{end}}>Record payment</button>
+                        </form>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
+
+        <div id="users-tab" class="tab-panel">
+            <section class="forms">
+                <div class="grid">
+                    <div class="form-card">
+                        <h2>Add friends</h2>
+                        <form method="post" action="/user">
+                            <label>
+                                <span>Name</span>
+                                <input required type="text" name="name" maxlength="50" placeholder="Bob" />
+                            </label>
+                            <button type="submit">Create user</button>
+                        </form>
+                    </div>
+                    <div class="form-card">
+                        <h2>Edit friends</h2>
+                        <div class="user-rows">
+                            {{range .Users}}
+                            <div class="user-row">
+                                <form method="post" action="/user/edit" class="user-edit">
+                                    <input type="hidden" name="id" value="{{.ID}}" />
+                                    <label>
+                                        <span class="muted">Name</span>
+                                        <input required type="text" name="name" value="{{.Name}}" maxlength="50" />
+                                    </label>
+                                    <div class="user-row-actions">
+                                        <button type="submit" class="save-button">Save</button>
+                                        <button type="submit" form="delete-{{.ID}}" class="delete-btn">Delete</button>
+                                    </div>
+                                </form>
+                                <form method="post" action="/user/delete" id="delete-{{.ID}}" class="user-delete">
+                                    <input type="hidden" name="id" value="{{.ID}}" />
+                                </form>
+                            </div>
+                            {{else}}
+                            <p class="muted">Add friends to see them shine here.</p>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         {{if .UserWarning}}
         <div id="warning-overlay" class="warning-overlay visible">
@@ -208,7 +505,88 @@
         </div>
         {{end}}
     </div>
-    <script type="application/json" id="budget-data">{{.AppData}}</script>
-    <script src="/static/js/dashboard.js" defer></script>
+    <script>
+        const tabs = document.querySelectorAll('.tab');
+        const panels = document.querySelectorAll('.tab-panel');
+        const participantsByItem = {{.Participants}};
+        const itemCosts = {{.ItemCosts}};
+        const itemSelect = document.querySelector('select[name="item"]');
+        const payerSelect = document.querySelector('select[name="user"]');
+        const amountInput = document.querySelector('input[name="amount"]');
+        const paymentForm = document.querySelector('form[action="/payment"]');
+        const preferredTab = document.body.dataset.activeTab || 'budget-tab';
+        function showPanel(target) {
+            panels.forEach(p => p.classList.toggle('active', p.id === target));
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.target === target));
+        }
+        tabs.forEach(tab => tab.addEventListener('click', () => showPanel(tab.dataset.target)));
+        function populatePayers() {
+            if (!payerSelect || !itemSelect) return;
+            const participants = participantsByItem[itemSelect.value] || [];
+            payerSelect.innerHTML = '';
+            if (participants.length === 0) {
+                const option = document.createElement('option');
+                option.disabled = true;
+                option.textContent = 'No participants for this item';
+                payerSelect.appendChild(option);
+                return;
+            }
+            participants.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                payerSelect.appendChild(option);
+            });
+        }
+        function currentItemCost() {
+            if (!itemSelect) return 0;
+            return Number(itemCosts[itemSelect.value]) || 0;
+        }
+        function updateAmountLimit() {
+            if (!amountInput) return;
+            const limit = currentItemCost();
+            if (limit > 0) {
+                amountInput.max = limit.toFixed(2);
+            } else {
+                amountInput.removeAttribute('max');
+            }
+        }
+        function validatePaymentAmount() {
+            if (!paymentForm || !amountInput) return true;
+            const limit = currentItemCost();
+            const value = parseFloat(amountInput.value);
+            if (isNaN(value)) return true;
+            if (limit > 0 && value > limit) {
+                alert(`Amount cannot exceed ${limit.toFixed(2)}`);
+                return false;
+            }
+            return true;
+        }
+        itemSelect?.addEventListener('change', () => {
+            populatePayers();
+            updateAmountLimit();
+        });
+        paymentForm?.addEventListener('submit', e => {
+            if (!validatePaymentAmount()) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            showPanel(preferredTab);
+            populatePayers();
+            updateAmountLimit();
+            const overlay = document.getElementById('warning-overlay');
+            if (!overlay) return;
+            const closeWarning = () => {
+                overlay.classList.remove('visible');
+                const url = new URL(window.location);
+                url.searchParams.delete('userWarning');
+                window.history.replaceState({}, '', url);
+            };
+            const okBtn = document.getElementById('warning-ok');
+            okBtn?.addEventListener('click', closeWarning);
+            setTimeout(closeWarning, 10000);
+        });
+    </script>
 </body>
 </html>
