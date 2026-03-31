@@ -7,167 +7,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-
-        body {
-            margin: 0;
-            font-family: 'Space Grotesk', system-ui, sans-serif;
-            background: #f8fafc;
-            color: #0f172a;
-        }
-        .page {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 3rem 1.5rem 3rem;
-        }
-        header {
-            margin-bottom: 1.2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-        a.back-link {
-            text-decoration: none;
-            color: #0f172a;
-            font-weight: 600;
-        }
-        h1 {
-            margin: 0;
-            font-size: 2rem;
-            color: #0f172a;
-        }
-        .muted {
-            color: #475569;
-            margin: 0;
-        }
-        .card {
-            background: #ffffff;
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            padding: 2rem;
-            box-shadow: 0 24px 40px rgba(15, 23, 42, 0.08);
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        label span {
-            display: block;
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #94a3b8;
-            margin-bottom: 0.35rem;
-        }
-        input[type="text"],
-        input[type="number"],
-        textarea {
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            padding: 0.9rem 1rem;
-            font-size: 0.95rem;
-            background: #f8fafc;
-            color: #0f172a;
-        }
-        textarea {
-            min-height: 100px;
-        }
-        .participant-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-        }
-        .participant-grid label {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 0.85rem;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.12);
-            background: rgba(248, 250, 252, 0.9);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        button {
-            border: none;
-            border-radius: 12px;
-            padding: 0.95rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, #34d399, #60a5fa);
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.25);
-            transition: transform 0.2s ease;
-        }
-        button:hover:not(:disabled) {
-            transform: translateY(-1px);
-        }
-        .checkbox {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.95rem;
-            color: #0f172a;
-        }
-        .checkbox input {
-            width: 1rem;
-            height: 1rem;
-        }
-        .delete-form {
-            margin-top: 1.5rem;
-        }
-        .delete-button {
-            width: 100%;
-            background: #ef4444;
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.35);
-        }
-        .warning-overlay {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(15, 23, 42, 0.55);
-            z-index: 20;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-        .warning-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .warning-dialog {
-            background: #111827;
-            border-radius: 16px;
-            padding: 1.2rem 1.5rem;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            text-align: center;
-            color: #fefce8;
-        }
-        .warning-dialog p {
-            margin: 0 0 1rem;
-            font-weight: 600;
-        }
-        .warning-dialog button {
-            background: transparent;
-            border: 1px solid rgba(248, 250, 252, 0.5);
-            color: #fefce8;
-            box-shadow: none;
-        }
-    
-</style>
+    <link rel="stylesheet" href="/static/css/edit.css">
 </head>
 <body>
-    <div class="page">
-        <header>
+    <div class="page edit-page">
+        <header class="page-header">
             <a class="back-link" href="/">← Back to canvas</a>
             <h1>Edit item</h1>
-            <p class="muted">Tweak the title, cost, participants, or mark it as fully paid up.</p>
+            <p class="subhead">Tweak the title, cost, participants, or mark it paid up.</p>
         </header>
-        <div class="card">
+        <div class="edit-card">
             <form method="post" action="/item/update">
                 <input type="hidden" name="id" value="{{.Item.ID}}" />
                 <label>
@@ -182,11 +31,11 @@
                     <span>Cost</span>
                     <input required min="0.1" step="0.01" type="number" name="cost" value="{{.CostValue}}" />
                 </label>
-                <div>
-                    <p class="muted" style="margin-bottom:0.35rem;">Participants</p>
+                <div class="participant-section">
+                    <p class="muted-field">Participants</p>
                     <div class="participant-grid">
                         {{range .Users}}
-                        <label>
+                        <label class="participant-pill">
                             <input type="checkbox" name="participants" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}} />
                             {{.Name}}
                         </label>
@@ -195,35 +44,26 @@
                         {{end}}
                     </div>
                 </div>
-                <label class="checkbox">
+                <label class="checkbox-field">
                     <input type="checkbox" name="paid_up" value="1" {{if .Item.Settled}}checked{{end}} />
-                    Mark this item as fully paid up and clear recorded payments.
+                    Mark this item as paid up and clear payments.
                 </label>
-                <button type="submit">Save changes</button>
+                <button type="submit" class="primary">Save changes</button>
             </form>
             <form method="post" action="/item/delete" class="delete-form">
                 <input type="hidden" name="id" value="{{.Item.ID}}" />
-                <button type="submit" class="delete-button">Delete item</button>
+                <button type="submit" class="danger">Delete item</button>
             </form>
         </div>
-    </div>
-    {{if .Warning}}
-    <div id="edit-warning" class="warning-overlay visible">
-        <div class="warning-dialog">
-            <p>{{.Warning}}</p>
-            <button type="button" id="warning-ok">Okay</button>
+        {{if .Warning}}
+        <div id="edit-warning" class="warning-overlay visible">
+            <div class="warning-dialog">
+                <p>{{.Warning}}</p>
+                <button type="button" id="warning-ok">Okay</button>
+            </div>
         </div>
+        {{end}}
     </div>
-    {{end}}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const overlay = document.getElementById('edit-warning');
-            if (!overlay) return;
-            const close = () => overlay.classList.remove('visible');
-            const okBtn = document.getElementById('warning-ok');
-            okBtn?.addEventListener('click', close);
-            setTimeout(close, 10000);
-        });
-    </script>
+    <script src="/static/js/item_edit.js" defer></script>
 </body>
 </html>
