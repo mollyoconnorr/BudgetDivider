@@ -1,5 +1,7 @@
-// store.go houses the SQLite persistence layer, migrations, and helper
-// utilities for items, users, and payments.
+/**
+ * store.go contains the SQLite persistence layer, migrations, and helper
+ * utilities for creating, updating, and deleting items, payments, and users.
+ */
 package main
 
 import (
@@ -12,12 +14,18 @@ import (
 	"strings"
 )
 
-// sqliteStore wraps the SQLite connection and provides persistence helpers.
+/**
+ * sqliteStore wraps the SQLite connection and exposes helper methods for
+ * managing items, participants, payments, and users.
+ */
 type sqliteStore struct {
 	db *sql.DB
 }
 
-// newSQLiteStore opens the SQLite database with migrations applied.
+/**
+ * newSQLiteStore opens or creates the SQLite database, enables foreign keys,
+ * and runs migrations to ensure necessary tables/columns exist.
+ */
 func newSQLiteStore(path string) (*sqliteStore, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
@@ -55,7 +63,9 @@ func (s *sqliteStore) Close() {
 	s.db.Close()
 }
 
-// Items loads every shared item with participants.
+/**
+ * Items loads every shared expense along with its participant names/IDs.
+ */
 func (s *sqliteStore) Items() ([]*Item, error) {
 	rows, err := s.db.Query("SELECT id, title, description, cost, settled FROM items ORDER BY id")
 	if err != nil {
@@ -111,7 +121,9 @@ func (s *sqliteStore) Items() ([]*Item, error) {
 	return result, nil
 }
 
-// Payments returns all recorded payments.
+/**
+ * Payments returns every payment stored in the database.
+ */
 func (s *sqliteStore) Payments() ([]Payment, error) {
 	rows, err := s.db.Query("SELECT item_id, user, amount FROM payments")
 	if err != nil {
@@ -130,7 +142,10 @@ func (s *sqliteStore) Payments() ([]Payment, error) {
 	return payments, rows.Err()
 }
 
-// AddItem inserts a shared expense and its participants within a transaction.
+/**
+ * AddItem inserts a shared expense and its participants within a transaction,
+ * ensuring both the item and item_participants rows remain in sync.
+ */
 func (s *sqliteStore) AddItem(title, description string, cost float64, participantIDs []int) (int, error) {
 	if title == "" {
 		return 0, fmt.Errorf("title is required")
@@ -169,7 +184,9 @@ func (s *sqliteStore) AddItem(title, description string, cost float64, participa
 	return int(itemID), nil
 }
 
-// ItemByID fetches an item and its participants.
+/**
+ * ItemByID fetches an item and its linked participants for editing.
+ */
 func (s *sqliteStore) ItemByID(id int) (*Item, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("item not found")
@@ -206,7 +223,10 @@ func (s *sqliteStore) ItemByID(id int) (*Item, error) {
 	return item, nil
 }
 
-// UpdateItem modifies an item and its participants; settling clears payments.
+/**
+ * UpdateItem modifies an item and resets its participant relationships. If
+ * the item is marked settled, existing payments are deleted.
+ */
 func (s *sqliteStore) UpdateItem(id int, title, description string, cost float64, participantIDs []int, settled bool) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid item")
@@ -268,7 +288,10 @@ func (s *sqliteStore) UpdateItem(id int, title, description string, cost float64
 	return nil
 }
 
-// DeleteItem removes an item only after it is marked settled.
+/**
+ * DeleteItem removes an item only after it is marked settled to avoid losing
+ * in-flight payments.
+ */
 func (s *sqliteStore) DeleteItem(id int) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid item")
@@ -289,7 +312,9 @@ func (s *sqliteStore) DeleteItem(id int) error {
 	return nil
 }
 
-// AddPayment records a payment for an item.
+/**
+ * AddPayment inserts a payment row tied to the payer and item.
+ */
 func (s *sqliteStore) AddPayment(itemID int, user string, amount float64) error {
 	if user == "" {
 		return fmt.Errorf("payer name must be provided")
@@ -306,7 +331,9 @@ func (s *sqliteStore) AddPayment(itemID int, user string, amount float64) error 
 	return nil
 }
 
-// Users lists all friends alphabetically.
+/**
+ * Users lists all friends alphabetically.
+ */
 func (s *sqliteStore) Users() ([]User, error) {
 	rows, err := s.db.Query("SELECT id, name FROM users ORDER BY name")
 	if err != nil {
@@ -324,7 +351,9 @@ func (s *sqliteStore) Users() ([]User, error) {
 	return users, rows.Err()
 }
 
-// AddUser inserts a new friend with a unique name.
+/**
+ * AddUser inserts a new friend, enforcing uniqueness/length.
+ */
 func (s *sqliteStore) AddUser(name string) (int, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -347,7 +376,9 @@ func (s *sqliteStore) AddUser(name string) (int, error) {
 	return int(id), nil
 }
 
-// UpdateUser renames an existing friend.
+/**
+ * UpdateUser renames a friend while keeping uniqueness constraints intact.
+ */
 func (s *sqliteStore) UpdateUser(id int, name string) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid user")
@@ -374,7 +405,9 @@ func (s *sqliteStore) UpdateUser(id int, name string) error {
 	return nil
 }
 
-// DeleteUser removes a friend if they have no lingering references.
+/**
+ * DeleteUser removes a friend when they have zero references to items/payments.
+ */
 func (s *sqliteStore) DeleteUser(id int) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid user")
@@ -395,7 +428,9 @@ func (s *sqliteStore) DeleteUser(id int) error {
 	return nil
 }
 
-// validateUserIDs ensures the provided participant IDs belong to real users.
+/**
+ * validateUserIDs ensures each participant ID exists in the users table.
+ */
 func (s *sqliteStore) validateUserIDs(ids []int) error {
 	if len(ids) == 0 {
 		return fmt.Errorf("select at least one participant")
@@ -429,7 +464,9 @@ func (s *sqliteStore) validateUserIDs(ids []int) error {
 	return nil
 }
 
-// itemExists reports whether an item with the given ID exists.
+/**
+ * itemExists reports whether an item with the provided ID exists.
+ */
 func (s *sqliteStore) itemExists(id int) (bool, error) {
 	var exists int
 	err := s.db.QueryRow("SELECT 1 FROM items WHERE id = ? LIMIT 1", id).Scan(&exists)
@@ -442,7 +479,9 @@ func (s *sqliteStore) itemExists(id int) (bool, error) {
 	return true, nil
 }
 
-// userExistsByName checks for an existing friend by name.
+/**
+ * userExistsByName checks whether a friend already exists by name.
+ */
 func (s *sqliteStore) userExistsByName(name string) (bool, error) {
 	var id int
 	err := s.db.QueryRow("SELECT id FROM users WHERE name = ? LIMIT 1", name).Scan(&id)
@@ -455,7 +494,9 @@ func (s *sqliteStore) userExistsByName(name string) (bool, error) {
 	return true, nil
 }
 
-// userNameByID looks up a friend's name by their ID.
+/**
+ * userNameByID returns a friend's name for a given ID.
+ */
 func (s *sqliteStore) userNameByID(id int) (string, error) {
 	var name string
 	err := s.db.QueryRow("SELECT name FROM users WHERE id = ? LIMIT 1", id).Scan(&name)
@@ -465,7 +506,10 @@ func (s *sqliteStore) userNameByID(id int) (string, error) {
 	return name, nil
 }
 
-// userHasReferences checks whether a user is attached to items or payments.
+/**
+ * userHasReferences checks whether the friend appears in item_participants
+ * or payments.
+ */
 func (s *sqliteStore) userHasReferences(id int, name string) error {
 	var count int
 	if err := s.db.QueryRow("SELECT COUNT(*) FROM item_participants WHERE user_id = ?", id).Scan(&count); err != nil {
@@ -485,7 +529,10 @@ func (s *sqliteStore) userHasReferences(id int, name string) error {
 	return nil
 }
 
-// renameLegacyItemParticipants detects and renames old participant tables.
+/**
+ * renameLegacyItemParticipants renames an old participant table when
+ * legacy columns are detected.
+ */
 func renameLegacyItemParticipants(db *sql.DB) (bool, error) {
 	rows, err := db.Query("PRAGMA table_info(item_participants)")
 	if err != nil {
@@ -525,7 +572,10 @@ func renameLegacyItemParticipants(db *sql.DB) (bool, error) {
 	return true, nil
 }
 
-// migrateLegendaryParticipants migrates legacy rows into the normalized schema.
+/**
+ * migrateLegendaryParticipants migrates legacy participant rows into the
+ * current schema.
+ */
 func migrateLegendaryParticipants(db *sql.DB, hasLegacy bool) error {
 	if !hasLegacy {
 		_, err := db.Exec("DROP TABLE IF EXISTS item_participants_old")
@@ -598,7 +648,9 @@ func ensureUser(exec sqlExecQuerier, name string) (int, error) {
 	return int(last), nil
 }
 
-// ensureTables ensures the required tables exist.
+/**
+ * ensureTables creates the necessary tables if they are missing.
+ */
 func ensureTables(db *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS users (
@@ -636,7 +688,9 @@ func ensureTables(db *sql.DB) error {
 	return nil
 }
 
-// ensureItemSettledColumn adds the settled flag to items when missing.
+/**
+ * ensureItemSettledColumn adds the settled column to items when needed.
+ */
 func ensureItemSettledColumn(db *sql.DB) error {
 	rows, err := db.Query("PRAGMA table_info(items)")
 	if err != nil {
@@ -670,7 +724,9 @@ func ensureItemSettledColumn(db *sql.DB) error {
 	return err
 }
 
-// uniqueInts strips duplicates while preserving order.
+/**
+ * uniqueInts removes duplicate ints while preserving the original order.
+ */
 func uniqueInts(values []int) []int {
 	seen := map[int]struct{}{}
 	result := make([]int, 0, len(values))
@@ -684,7 +740,9 @@ func uniqueInts(values []int) []int {
 	return result
 }
 
-// placeholders builds a comma-separated `?` list for prepared statements.
+/**
+ * placeholders builds a "?,?" placeholder list for IN clauses.
+ */
 func placeholders(n int) string {
 	if n <= 0 {
 		return ""
@@ -699,7 +757,9 @@ func placeholders(n int) string {
 	return b.String()
 }
 
-// intsToInterface converts an int slice to an interface{} slice for query args.
+/**
+ * intsToInterface converts an int slice into []interface{} for queries.
+ */
 func intsToInterface(values []int) []interface{} {
 	out := make([]interface{}, len(values))
 	for i, v := range values {

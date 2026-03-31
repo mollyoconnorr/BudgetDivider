@@ -1,5 +1,7 @@
-// server.go wires HTTP handlers, templates, and redirects, exposing the
-// Budget Divider routes for items, payments, and user management.
+/**
+ * server.go wires the HTTP handlers, templates, and redirect helpers together,
+ * exposing the Budget Divider routes that manage items, payments, and users.
+ */
 package main
 
 import (
@@ -14,8 +16,10 @@ import (
 	"strings"
 )
 
-// itemEditData feeds the item edit template with the current item, selected
-// participants, and any validation warnings.
+/**
+ * itemEditData feeds the item edit template with the current item, selected
+ * participants, and validation warnings emitted during updates.
+ */
 // itemEditData feeds the item edit template with the current item, selected
 // participants, and any validation warnings.
 type itemEditData struct {
@@ -26,7 +30,10 @@ type itemEditData struct {
 	Warning   string
 }
 
-// registerHandlers registers all application HTTP routes with the mux.
+/**
+ * registerHandlers installs every Budget Divider endpoint on the provided mux
+ * so incoming HTTP requests are routed to the correct handler logic.
+ */
 func registerHandlers(mux *http.ServeMux, store *sqliteStore, tmpl *template.Template, editTmpl *template.Template) {
 	// Budget and user endpoints use the same mux so we can extend easily.
 	mux.HandleFunc("/", indexHandler(store, tmpl))
@@ -40,7 +47,10 @@ func registerHandlers(mux *http.ServeMux, store *sqliteStore, tmpl *template.Tem
 	mux.HandleFunc("/user/delete", userDeleteHandler(store))
 }
 
-// indexHandler renders the main budgets dashboard with items, payments, balances, and warnings.
+/**
+ * indexHandler renders the main budget dashboard, supplying items, payments,
+ * computed balances, settlement suggestions, and any user-visible warnings.
+ */
 func indexHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -90,6 +100,7 @@ func indexHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc 
 			log.Printf("encoding item costs: %v", err)
 			return
 		}
+		appData := template.JS(fmt.Sprintf("{\"participants\": %s, \"itemCosts\": %s}", participantJSON, costJSON))
 
 		paymentsByItem := map[int][]Payment{}
 		for _, p := range payments {
@@ -102,11 +113,14 @@ func indexHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc 
 		activeTab := normalizeTab(r.URL.Query().Get("tab"))
 		warning := r.URL.Query().Get("userWarning")
 
-		renderTemplate(w, tmpl, items, paymentsByItem, balances, settlements, users, warning, activeTab, template.JS(participantJSON), template.JS(costJSON))
+		renderTemplate(w, tmpl, items, paymentsByItem, balances, settlements, users, warning, activeTab, appData)
 	}
 }
 
-// itemHandler validates a new item and persists it along with its participants.
+/**
+ * itemHandler validates the new item payload (title, cost, participants) and
+ * persists it along with participant assignments in a transactional fashion.
+ */
 func itemHandler(store *sqliteStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -151,7 +165,11 @@ func itemHandler(store *sqliteStore) http.HandlerFunc {
 	}
 }
 
-// paymentHandler records a payment for the selected item and payer.
+/**
+ * paymentHandler records a payment amount and payer for a specific item,
+ * validating that the amount does not exceed the item cost and that a payer
+ * is selected.
+ */
 func paymentHandler(store *sqliteStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -195,7 +213,10 @@ func paymentHandler(store *sqliteStore) http.HandlerFunc {
 	}
 }
 
-// itemEditHandler loads the edit form for a single item.
+/**
+ * itemEditHandler serves the edit-item page for the requested ID so users can
+ * adjust details before resubmitting.
+ */
 func itemEditHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -221,7 +242,10 @@ func itemEditHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFu
 	}
 }
 
-// itemUpdateHandler applies edits to an existing item, including participant switches and settled toggles.
+/**
+ * itemUpdateHandler accepts edits from the edit form, validates every field,
+ * updates the item participants, and optionally toggles the settled flag.
+ */
 func itemUpdateHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -276,7 +300,10 @@ func itemUpdateHandler(store *sqliteStore, tmpl *template.Template) http.Handler
 	}
 }
 
-// itemDeleteHandler removes an item after it has been marked as paid up.
+/**
+ * itemDeleteHandler deletes a shared expense only once it has been marked
+ * settled so historical references are cleaned up safely.
+ */
 func itemDeleteHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -314,7 +341,10 @@ func itemDeleteHandler(store *sqliteStore, tmpl *template.Template) http.Handler
 	}
 }
 
-// userHandler creates a new friend if the name passes validation.
+/**
+ * userHandler validates and creates a new user entry, ensuring the name is
+ * neither empty nor too long before persisting.
+ */
 func userHandler(store *sqliteStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -339,7 +369,9 @@ func userHandler(store *sqliteStore) http.HandlerFunc {
 	}
 }
 
-// userEditHandler renames an existing friend.
+/**
+ * userEditHandler renames a friend while keeping uniqueness constraints intact.
+ */
 func userEditHandler(store *sqliteStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -373,7 +405,10 @@ func userEditHandler(store *sqliteStore) http.HandlerFunc {
 	}
 }
 
-// userDeleteHandler removes a friend when they have no open references.
+/**
+ * userDeleteHandler deletes users only after verifying they do not participate
+ * in unsettled items or past payments.
+ */
 func userDeleteHandler(store *sqliteStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -398,8 +433,11 @@ func userDeleteHandler(store *sqliteStore) http.HandlerFunc {
 	}
 }
 
-// renderTemplate assembles the view data and executes the dashboard template.
-func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Item, payments map[int][]Payment, balances map[string]float64, settlements []string, users []User, warning string, activeTab string, participants template.JS, itemCosts template.JS) {
+/**
+ * renderTemplate assembles the dashboard view model and executes the
+ * template with pre-computed balances, settlements, participants, and costs.
+ */
+func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Item, payments map[int][]Payment, balances map[string]float64, settlements []string, users []User, warning string, activeTab string, appData template.JS) {
 	balanceList := make([]struct {
 		Name    string
 		Balance float64
@@ -420,30 +458,30 @@ func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Ite
 			Name    string
 			Balance float64
 		}
-		Settlements  []string
-		Users        []User
-		UserWarning  string
-		ActiveTab    string
-		Participants template.JS
-		ItemCosts    template.JS
+		Settlements []string
+		Users       []User
+		UserWarning string
+		ActiveTab   string
+		AppData     template.JS
 	}{
-		Items:        items,
-		Payments:     payments,
-		Balances:     balances,
-		BalanceList:  balanceList,
-		Settlements:  settlements,
-		Users:        users,
-		UserWarning:  warning,
-		ActiveTab:    activeTab,
-		Participants: participants,
-		ItemCosts:    itemCosts,
+		Items:       items,
+		Payments:    payments,
+		Balances:    balances,
+		BalanceList: balanceList,
+		Settlements: settlements,
+		Users:       users,
+		UserWarning: warning,
+		ActiveTab:   activeTab,
+		AppData:     appData,
 	}
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Printf("template error: %v", err)
 	}
 }
 
-// selectedMap turns a slice of participant IDs into a lookup map for template checkboxes.
+/**
+ * selectedMap converts participant IDs into a map for quick template lookups.
+ */
 func selectedMap(ids []int) map[int]bool {
 	selected := make(map[int]bool, len(ids))
 	for _, id := range ids {
@@ -452,14 +490,20 @@ func selectedMap(ids []int) map[int]bool {
 	return selected
 }
 
-// renderItemEdit executes the edit template with the provided data.
+/**
+ * renderItemEdit executes the item edit template and logs any rendering
+ * errors.
+ */
 func renderItemEdit(w http.ResponseWriter, tmpl *template.Template, data itemEditData) {
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Printf("item edit template error: %v", err)
 	}
 }
 
-// renderItemEditPage prepares the item edit view payload.
+/**
+ * renderItemEditPage packages the item, user list, selected participants, and
+ * warning message before rendering the edit view.
+ */
 func renderItemEditPage(w http.ResponseWriter, tmpl *template.Template, item *Item, users []User, selected map[int]bool, costValue, warning string) {
 	data := itemEditData{
 		Item:      item,
@@ -471,7 +515,10 @@ func renderItemEditPage(w http.ResponseWriter, tmpl *template.Template, item *It
 	renderItemEdit(w, tmpl, data)
 }
 
-// redirectToTab preserves the tab query parameter across redirects.
+/**
+ * redirectToTab navigates back to a specific tab (Budget or Manage Users)
+ * by encoding the tab name in the redirect target.
+ */
 func redirectToTab(w http.ResponseWriter, r *http.Request, tab string) {
 	u := url.URL{Path: "/"}
 	if tab != "" {
@@ -482,7 +529,10 @@ func redirectToTab(w http.ResponseWriter, r *http.Request, tab string) {
 	http.Redirect(w, r, u.String(), http.StatusSeeOther)
 }
 
-// redirectWithWarning embeds a temporary warning message into the URL when redirecting.
+/**
+ * redirectWithWarning attaches a warning message and tab parameter to the
+ * redirect so the UI can surface failures without losing context.
+ */
 func redirectWithWarning(w http.ResponseWriter, r *http.Request, msg string, tab string) {
 	if msg == "" {
 		redirectToTab(w, r, tab)

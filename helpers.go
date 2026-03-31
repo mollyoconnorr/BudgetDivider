@@ -1,4 +1,7 @@
-// helpers.go holds shared utilities for validation, formatting, and tab state.
+/**
+ * helpers.go bundles shared validation, formatting, and tab-state utilities for
+ * the Budget Divider UI.
+ */
 package main
 
 import (
@@ -11,7 +14,9 @@ import (
 	"strings"
 )
 
-// parseIDs converts checkbox indicators to ints while ignoring invalid entries.
+/**
+ * parseIDs converts checkbox values to ints, ignoring blanks and malformed input.
+ */
 func parseIDs(values []string) []int {
 	ids := make([]int, 0, len(values))
 	for _, v := range values {
@@ -28,7 +33,10 @@ func parseIDs(values []string) []int {
 	return ids
 }
 
-// parseCost ensures the submitted cost is present, numeric, and >= minCost.
+/**
+ * parseCost validates that the cost string is present, numeric, and satisfies
+ * the minimum allowed value before returning it.
+ */
 func parseCost(value string) (float64, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -44,7 +52,9 @@ func parseCost(value string) (float64, error) {
 	return cost, nil
 }
 
-// perShare returns the share value for each participant of an item.
+/**
+ * perShare returns the per-participant share amount for an item.
+ */
 func perShare(item *Item) float64 {
 	if item == nil || len(item.Participants) == 0 {
 		return 0
@@ -52,7 +62,9 @@ func perShare(item *Item) float64 {
 	return item.Cost / float64(len(item.Participants))
 }
 
-// formatBalance renders balances with a sign for clarity.
+/**
+ * formatBalance renders balances with explicit +/− signs for clarity in the UI.
+ */
 func formatBalance(balance float64) string {
 	if balance >= 0 {
 		return fmt.Sprintf("+$%.2f", balance)
@@ -60,12 +72,17 @@ func formatBalance(balance float64) string {
 	return fmt.Sprintf("-$%.2f", math.Abs(balance))
 }
 
-// formatCurrency renders a float as a dollar amount.
+/**
+ * formatCurrency formats a float64 as USD with two decimal places.
+ */
 func formatCurrency(amount float64) string {
 	return fmt.Sprintf("$%.2f", amount)
 }
 
-// computeBalances subtracts every participant's share and adds recorded payments.
+/**
+ * computeBalances subtracts each participant's share from their balance and
+ * re-adds recorded payments to compute the net owed/owed-to amount.
+ */
 func computeBalances(items []*Item, payments []Payment) map[string]float64 {
 	balances := map[string]float64{}
 	for _, item := range items {
@@ -79,14 +96,17 @@ func computeBalances(items []*Item, payments []Payment) map[string]float64 {
 		}
 	}
 	for _, payment := range payments {
-		// Add payments back so the net balance shows overpayment or debt.
+		// Reapply earlier payments to update net balances.
 		balances[payment.User] += payment.Amount
 	}
 	return balances
 }
 
-// computeSettlements produces readable payment recommendations between members.
-// ChatGPT helped figure out this logic
+/**
+ * computeSettlements turns balances into debt/credit pairs and produces text
+ * like "A pays B $12.50" for the dashboard.
+ * ChatGPT helped with the logic of this function
+ */
 func computeSettlements(balances map[string]float64) []string {
 	type participant struct {
 		name string
@@ -126,7 +146,9 @@ func computeSettlements(balances map[string]float64) []string {
 	return settlements
 }
 
-// min returns the smaller of two floats.
+/**
+ * min returns the smaller of two floats.
+ */
 func min(a, b float64) float64 {
 	if a < b {
 		return a
@@ -134,7 +156,9 @@ func min(a, b float64) float64 {
 	return b
 }
 
-// buildDBPath chooses the SQLite path using an environment override.
+/**
+ * buildDBPath chooses the SQLite file location, respecting the DB_PATH env var.
+ */
 func buildDBPath() string {
 	if p := os.Getenv("DB_PATH"); p != "" {
 		return p
@@ -142,7 +166,9 @@ func buildDBPath() string {
 	return filepath.Join("data", "budget.db")
 }
 
-// normalizeTab ensures the tab value only matches the known tabs.
+/**
+ * normalizeTab defaults any unknown tab value back to the budget view.
+ */
 func normalizeTab(value string) string {
 	if value == usersTabID {
 		return usersTabID

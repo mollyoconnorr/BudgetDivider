@@ -1,7 +1,9 @@
-// Budget Divider is a lightweight Go web server that tracks shared expenses,
-// records payments, and calculates clear settlements between friends. The
-// application persists data in SQLite, validates inputs, and exposes a
-// two-tab interface (budget + user management) via HTML templates.
+/**
+ * Budget Divider is a lightweight Go web server that tracks shared expenses,
+ * records payments, and calculates clear settlements between friends. The
+ * application persists data in SQLite, validates inputs, and exposes a
+ * two-tab interface (budget + user management) via HTML templates.
+ */
 package main
 
 import (
@@ -41,7 +43,9 @@ type User struct {
 	Name string
 }
 
-// main builds and runs the web server that drives the Budget Divider UI.
+/**
+ * main builds and runs the web server that drives the Budget Divider UI.
+ */
 func main() {
 	dbPath := buildDBPath()
 	store, err := newSQLiteStore(dbPath)
@@ -59,6 +63,7 @@ func main() {
 	editTmpl := template.Must(template.ParseFiles(filepath.Join("templates", "item_edit.html")))
 
 	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	registerHandlers(mux, store, tmpl, editTmpl)
 
 	addr := ":8080"
