@@ -1,127 +1,86 @@
-# Budget Divider (Go)
+# Budget Divider
 
-Budget Divider is a lightweight Go web application that helps friends share and settle group expenses. You can add users, create shared items, record payments, and the app keeps track of who owes whom and which items are fully paid. All data lives in a SQLite database so the information persists between runs.
+Budget Divider is a single-binary Go web app that lets small groups track shared expenses, record who paid what, and compute exactly who owes whom so your broke college friends stay on the same page. The server uses SQLite for persistence, the UI lives in static templates with dedicated CSS/JS files, and the math looks at each item, participants, and payments to generate settlement suggestions.
 
-## Key ideas
-
-- **Users (friends)** are first-class entities. You add a friend, edit their name, and delete them only if they are not tied to any items or payments.
-- **Items** represent shared costs (groceries, utilities, a meal, etc.). Each item has a title, optional description, cost, and a set of participants.
-- **Payments** record who paid how much toward an item. The UI limits the payer dropdown to the participants for that item, enforces a minimum payment of **$0.10**, and doesn’t allow paying more than the item's total.
-- Once an item is marked “paid up” in the edit form, its payment history is cleared and the card shows a “Paid in full” badge; pending items show “Pending payment.”
-
-## Features
-
-1. **Two-tab interface**
-   - `Budget` tab lists items, balances, settlements, and lets you create items/payments.
-   - `Manage users` tab exists for user creation, inline edits, and deletes (with warnings if the user is still referenced).
-2. **Validation**
-   - Title ≤ 30 chars, description ≤ 200, names ≤ 50.
-   - Cost and payments must be ≥ $0.10 and payments cannot exceed the item cost.
-   - Delete actions about users/items surface warnings (now temporary overlays), and you cannot delete a user who still participates in an unsettled item.
-3. **SQLite-backed persistence**
-   - `data/budget.db` (default) stores users, items, participants, payments, and whether an item has `settled`.
-   - Set the `DB_PATH` environment variable before starting to override the default database path.
-4. **Settlement math**
-   - `computeBalances` subtracts each participant’s share of every item cost from their balance, then adds their recorded payments.
-   - `computeSettlements` walks through sorted creditors/debtors and pairs them: the debtor pays the smaller of their owed amount or the creditor’s positive balance, building suggestions like “Alice pays Bob $12.50.” This minimizes the number of transfers.
-
-## Prerequisites
-
-- [Go 1.25.0](https://go.dev/doc/install) (the module declares `go 1.25.0`).
-- SQLite3 headers / C toolchain (the app builds `github.com/mattn/go-sqlite3`, which requires CGO).
-- Git (for cloning).
-
-> Running `go run .` or `go test ./...` automatically downloads dependencies through Go modules.
-
-## Cloning and running
+## Getting started
 
 ```bash
-git clone <repository-url>
-cd Go-WebApp
-# (optional) set a custom path for the SQLite file
+git clone https://github.com/mollyoconnorr/BudgetDivider
+cd BudgetDivider
+# (optional) change where the SQLite file lives
 export DB_PATH="/tmp/budget.db"
-# start the web server on :8080
+# run the server on http://localhost:8080
 go run .
 ```
 
-- The application listens on `:8080`. Update the `addr := ":8080"` line in `main.go` if you need a different port, or use a reverse proxy.
-- The web UI becomes available at `http://localhost:8080/` after the server starts.
-- Stop the server with `Ctrl+C`; the SQLite data stays in `DB_PATH` (default `data/budget.db`).
+Once the server is running, visit `http://localhost:8080/` to open the dashboard. The first request will create `data/budget.db` automatically (unless you override `DB_PATH`), so you do not need to manually create the database; the directory is ignored by git.
 
-### Running somewhere else or shipping a binary
+## Prerequisites
 
-```bash
-DB_PATH=/var/tmp/budget.db go run .
-# or build a standalone binary
-go build -o budget-divider .
-./budget-divider
-```
+- **Go 1.25.0+** – install via [https://go.dev/doc/install](https://go.dev/doc/install).
+- **CGO toolchain** – `mattn/go-sqlite3` requires C headers, so make sure you have a compiler (Xcode command line tools on macOS, build-essential on Linux).
+- **Git** – to clone the repository (and keep history tidy).
 
-## Database schema (via `ensureTables`)
+## Running the app
 
-| Table | Purpose |
-| --- | --- |
-| `users` | Friend names (`id`, `name`). Names are unique.
-| `items` | Shared expenses with `title`, `description`, `cost`, and `settled` flag.
-| `item_participants` | Join table linking `items` to user IDs, enforcing uniqueness and cascading deletes.
-| `payments` | Logged payments per item; once an item is marked paid up, its payments are removed.
+1. Clone the repo and `cd` into it (see above).
+2. Run `go run .` to build and serve the app on `:8080`.
+3. Open the URL in your browser and use the two tabs:
+   - **Budget** – add items, view balances, record payments, and see pending settlements.
+   - **Manage users** – create, rename, or delete friends (deletions are blocked if the friend is still tied to items/payments).
+4. Stop the server with `Ctrl+C`. Your data stays in `data/budget.db` (unless you changed `DB_PATH`).
+
+## Architecture
+
+- **`main.go`** wires the HTTP server, template functions, and SQLite store factory.
+- **`server.go`** defines handlers for `/`, `/item`, `/payment`, `/item/edit`, `/item/update`, `/item/delete`, `/user`, `/user/edit`, and `/user/delete`, and it renders the templates with helper data (balances, settlements, user warning, and JSON needed by the dashboard JS).
+- **`store.go`** is the persistence layer: it creates tables, enforces the `settled` flag, and manages items, users, payments, and participant links inside transactions.
+- **`helpers.go`** holds validation, formatting, and settlement math; `computeBalances` subtracts per-share amounts from each participant and re-adds their payments, while `computeSettlements` walks balances to produce human-readable strings like “Alice pays Bob $12.50.”
+- **Templates + static assets** – `templates/index.html` and `templates/item_edit.html` rely on dedicated CSS files under `static/css` and JS files under `static/js` (`dashboard.js` for the main tab logic and `item_edit.js` for the edit form). The JSON blob injected into `<script type="application/json" id="budget-data">` keeps the dashboard JavaScript decoupled from inline `<script>` tags.
 
 ## How the math works (who owes whom)
 
-1. **Per-share computation**
-   - Each item divides its `cost` evenly across its participants: `perShare = cost / len(participants)`.
-   - `computeBalances` subtracts `perShare` for every participant (the debt) and then adds each recorded payment.
-2. **Balance interpretation**
-   - Positive balance → the person has overpaid overall and should receive money back.
-   - Negative balance → the person still owes money.
-3. **Pairing debtors and creditors**
-   - `computeSettlements` sorts debtors (most negative) and creditors (most positive), then iteratively lets the debtor pay the smaller of their debt or the creditor’s credit.
-   - It appends human-readable strings such as “Payers name pays Receiver name $X.XX.”
-   - Very small remainders (< $0.01) are treated as zero to keep the list tidy.
+1. **Per-share debt** – each item divides its cost evenly over its participants (`perShare = cost / len(participants)`). `computeBalances` subtracts that share from every participant’s balance.
+2. **Payments** – recorded payments add back to the payer’s balance. If someone paid more than their share, their balance becomes positive; if they still owe, it stays negative.
+3. **Settlements** – `computeSettlements` sorts debtors (most negative) and creditors (most positive), then pairs them greedily: the debtor pays the smaller of what they owe or what the creditor should receive. The result is a short list of strings like “Charlie pays Dana $18.50,” and tiny rounding differences (<$0.01) are ignored.
 
-## UI behaviors worth knowing
+## UI behavior
 
-1. Tab navigation keeps the selected panel active by capturing the `tab` query parameter in the URL.
-2. Adding payments restricts payers to participants of the selected item and caps the `amount` input to that item’s cost; this is enforced both client-side (JavaScript + HTML attributes) and server-side.
-3. Warning overlays appear briefly when events fail (e.g., deleting a user with unsettled references); the overlay auto-dismisses after 10 seconds or when the user taps “Okay.”
-4. Settled items hide the payment list and instead show “Paid in full” plus a note that all payments were cleared.
+- The two tabs are fully controlled by the dashboard JavaScript; the server embeds `tab` and `userWarning` query parameters so the right panel stays visible and overlay warnings show where intended.
+- The **Add item** form enforces title/description length limits, requires at least one participant, and blocks submission until there are users to pick from.
+- The **Record a payment** form only lists payers that belong to the selected item and caps the amount input to that item’s total. Frontend validation mirrors the server-side checks (minimum $0.10; cannot exceed the item cost).
+- Settled items display a bold, color-coded status badge, hide the payment list, and unlock the delete button only after marking the item “paid up.”
+- Warning overlays (both dashboard and edit page) disappear automatically after 10 seconds or when the user taps “Okay.”
 
-## Development Notes
+## FAQ
 
-- The server is a single `net/http` binary. Handlers are defined in `main.go` for `/`, `/item`, `/payment`, `/user`, `/item/edit`, etc.
-- Templates (`templates/index.html` and `templates/item_edit.html`) use `html/template` to render dynamic data and register helper functions like `perShare`, `formatBalance`, and `formatCurrency` for reuse.
-- Validation functions such as `parseCost`, `parseIDs`, and `max length` constants protect the database from bad input.
-- SQLite operations often run in transactions (e.g., `AddItem` and `UpdateItem`), ensuring that item/participant updates stay consistent.
-- The `sqliteStore` automatically adds the `settled` column when migrating older databases and moves legacy participant tables into the normalized schema.
+**Do I need to create a database after cloning?**
+No. Running `go run .` will create `data/budget.db` if it does not exist. The default directory is ignored via `.gitignore`, so you can safely delete `data/budget.db` to reset the app.
 
-## Bonus tips
+**What is the difference between `go.mod` and `go.sum`?**
+- `go.mod` describes the module path (`github.com/mollyoconnorr/BudgetDivider`) and the dependency requirements.
+- `go.sum` records cryptographic checksums for every module version that Go downloads, ensuring future builds grab exactly the same code.
+Both are maintained automatically by `go mod tidy`/`go build`.
 
-- Manually inspect the data file:
-  ```bash
-  sqlite3 data/budget.db
-  sqlite> .tables
-  sqlite> SELECT * FROM users;
-  ```
-- Reset the application by deleting `data/budget.db` while the server is stopped.
-- HTML templates auto-escape user input, which reduces XSS risk.
+**What is `sessions.json`? Should I delete it?**
+This project does not generate a `sessions.json`; all persistence happens through SQLite. If you find a `sessions.json` file from another experiment, you can delete it or keep it elsewhere – nothing in this repo reads it.
 
-## Running tests (if added later)
+**What else can I tweak?**
+- Change the default port by editing the `addr` constant in `main.go`.
+- Override `DB_PATH` for per-environment SQLite files (e.g., `/tmp/budget.db`).
+- Extend `store.go` with new columns (e.g., timestamps or currencies) and update the templates accordingly.
 
-There are no automated tests at the moment, but you can run:
+## Running tests
+
+Execute:
 
 ```bash
 go test ./...
 ```
 
-after you add test files or if you want to cover helpers such as `computeBalances`.
+There are no tests bundled yet, but this command will type-check everything once you add test files.
 
-## Contribution / Next steps
+## References
 
-Some ideas to extend the project:
-
-- Add authentication so multiple households can maintain separate budgets.
-- Track receipts or attach notes/images (store as blobs or via a filesystem lookup).
-- Offer CSV export/import for offline accounting.
-- Schedule regular summary emails or Slack reminders with a cron job.
-
-Happy budgeting with your broke college friends!
+- [Go wiki tutorial](https://go.dev/doc/articles/wiki/) jumpstarted the web server scaffolding and template rendering.
+- ChatGPT helped polish Go syntax and double-check the settlement logic so the math section stays accurate.
