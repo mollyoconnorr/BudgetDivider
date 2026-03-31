@@ -6,30 +6,14 @@ Budget Divider is a single-binary Go web app that lets small groups track shared
 
 ```bash
 git clone https://github.com/mollyoconnorr/BudgetDivider
-git checkout main
 cd BudgetDivider
-# (optional) change where the SQLite file lives
-export DB_PATH="/tmp/budget.db"
-# run the server on http://localhost:8080
 go run .
+# run the server on http://localhost:8080
 ```
-
-Once the server is running, visit `http://localhost:8080/` to open the dashboard. The first request will create `data/budget.db` automatically (unless you override `DB_PATH`), so you do not need to manually create the database; the directory is ignored by git.
 
 ## Prerequisites
 
 - **Go 1.25.0+** – install via [https://go.dev/doc/install](https://go.dev/doc/install).
-- **CGO toolchain** – `mattn/go-sqlite3` requires C headers, so make sure you have a compiler (Xcode command line tools on macOS, build-essential on Linux).
-- **Git** – to clone the repository (and keep history tidy).
-
-## Running the app
-
-1. Clone the repo, `cd` into it, and make sure you are on `main` (see Getting started).
-2. Run `go run .` to build and serve the app on `:8080`.
-3. Open `http://localhost:8080/` and use the two tabs:
-   - **Budget** – add items, view balances, record payments, and see pending settlements.
-   - **Manage users** – create, rename, or delete friends (deletions are blocked if the friend is still tied to items or payments).
-4. Stop the server with `Ctrl+C`. Your data stays in `data/budget.db` (or wherever `DB_PATH` points).
 
 ## Architecture
 
@@ -53,35 +37,7 @@ Once the server is running, visit `http://localhost:8080/` to open the dashboard
 - Settled items show a bold, color-coded status badge, hide the payment list, and enable the delete control only after marking the item “paid up.”
 - Warning overlays (dashboard and edit page) disappear automatically after 10 seconds or when the user taps “Okay.”
 
-## FAQ
-
-**Do I need to create a database after cloning?**
-No. Running `go run .` will create `data/budget.db` if it does not exist. The default directory is ignored via `.gitignore`, so deleting the file resets the data while the server is stopped.
-
-**What is the difference between `go.mod` and `go.sum`?**
-- `go.mod` describes the module path (`github.com/mollyoconnorr/BudgetDivider`) and dependency requirements.
-- `go.sum` records cryptographic checksums for every module version that Go downloads, ensuring future builds fetch the same code.
-Both are automatically maintained by `go mod tidy`/`go build`.
-
-**What is `sessions.json`? Should I delete it?**
-This project does not generate a `sessions.json`; all persistence happens through SQLite. If you find a `sessions.json` from another experiment, you can delete it—the app never reads it.
-
-**What else can I tweak?**
-- Change the default port by editing the `addr` constant in `main.go`.
-- Override `DB_PATH` for per-environment SQLite files.
-- Extend `store.go` with new columns (e.g., timestamps or currencies) and update the templates accordingly.
-
-## Running tests
-
-Execute:
-
-```bash
-go test ./...
-```
-
-There are no bundled tests yet, but this command will type-check everything once you add test files.
-
 ## References
 
-- [Go wiki tutorial](https://go.dev/doc/articles/wiki/) jumpstarted the web server scaffolding and template rendering.
-- ChatGPT helped polish Go syntax and double-check the settlement logic so the math section stays accurate.
+- [Go wiki tutorial](https://go.dev/doc/articles/wiki/) helped jumpstart the web server and template rendering.
+- ChatGPT helped with various Go syntax and double-check the settlement logic so the math section was accurate.
