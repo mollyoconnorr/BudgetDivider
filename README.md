@@ -1,4 +1,4 @@
-# Budget Divider (Go)
+# Budget Divider 
 
 Budget Divider is a lightweight Go web application that helps friends share and settle group expenses. You can add users, create shared items, record payments, and the app keeps track of who owes whom and which items are fully paid. All data lives in a SQLite database so the information persists between runs.
 
@@ -28,33 +28,16 @@ Budget Divider is a lightweight Go web application that helps friends share and 
 ## Prerequisites
 
 - [Go 1.25.0](https://go.dev/doc/install) (the module declares `go 1.25.0`).
-- SQLite3 headers / C toolchain (the app builds `github.com/mattn/go-sqlite3`, which requires CGO).
-- Git (for cloning).
 
-> Running `go run .` or `go test ./...` automatically downloads dependencies through Go modules.
+> Running `go run .` automatically downloads dependencies through Go modules.
 
 ## Cloning and running
 
 ```bash
-git clone <repository-url>
-cd Go-WebApp
-# (optional) set a custom path for the SQLite file
-export DB_PATH="/tmp/budget.db"
-# start the web server on :8080
+git clone https://github.com/mollyoconnorr/BudgetDivider
+cd BudgetDivider
 go run .
-```
-
-- The application listens on `:8080`. Update the `addr := ":8080"` line in `main.go` if you need a different port, or use a reverse proxy.
-- The web UI becomes available at `http://localhost:8080/` after the server starts.
-- Stop the server with `Ctrl+C`; the SQLite data stays in `DB_PATH` (default `data/budget.db`).
-
-### Running somewhere else or shipping a binary
-
-```bash
-DB_PATH=/var/tmp/budget.db go run .
-# or build a standalone binary
-go build -o budget-divider .
-./budget-divider
+# The web UI becomes available at `http://localhost:8080/` after the server starts.
 ```
 
 ## Database schema (via `ensureTables`)
@@ -81,47 +64,8 @@ go build -o budget-divider .
 
 ## UI behaviors worth knowing
 
-1. Tab navigation keeps the selected panel active by capturing the `tab` query parameter in the URL.
-2. Adding payments restricts payers to participants of the selected item and caps the `amount` input to that item’s cost; this is enforced both client-side (JavaScript + HTML attributes) and server-side.
-3. Warning overlays appear briefly when events fail (e.g., deleting a user with unsettled references); the overlay auto-dismisses after 10 seconds or when the user taps “Okay.”
-4. Settled items hide the payment list and instead show “Paid in full” plus a note that all payments were cleared.
-
-## Development Notes
-
-- The server is a single `net/http` binary. Handlers are defined in `main.go` for `/`, `/item`, `/payment`, `/user`, `/item/edit`, etc.
-- Templates (`templates/index.html` and `templates/item_edit.html`) use `html/template` to render dynamic data and register helper functions like `perShare`, `formatBalance`, and `formatCurrency` for reuse.
-- Validation functions such as `parseCost`, `parseIDs`, and `max length` constants protect the database from bad input.
-- SQLite operations often run in transactions (e.g., `AddItem` and `UpdateItem`), ensuring that item/participant updates stay consistent.
-- The `sqliteStore` automatically adds the `settled` column when migrating older databases and moves legacy participant tables into the normalized schema.
-
-## Bonus tips
-
-- Manually inspect the data file:
-  ```bash
-  sqlite3 data/budget.db
-  sqlite> .tables
-  sqlite> SELECT * FROM users;
-  ```
-- Reset the application by deleting `data/budget.db` while the server is stopped.
-- HTML templates auto-escape user input, which reduces XSS risk.
-
-## Running tests (if added later)
-
-There are no automated tests at the moment, but you can run:
-
-```bash
-go test ./...
-```
-
-after you add test files or if you want to cover helpers such as `computeBalances`.
-
-## Contribution / Next steps
-
-Some ideas to extend the project:
-
-- Add authentication so multiple households can maintain separate budgets.
-- Track receipts or attach notes/images (store as blobs or via a filesystem lookup).
-- Offer CSV export/import for offline accounting.
-- Schedule regular summary emails or Slack reminders with a cron job.
+1. Adding payments restricts payers to participants of the selected item and caps the `amount` input to that item’s cost; this is enforced both client-side (JavaScript + HTML attributes) and server-side.
+2. Warning overlays appear briefly when events fail (e.g., deleting a user with unsettled references); the overlay auto-dismisses after 10 seconds or when the user taps “Okay.”
+3. Settled items hide the payment list and instead show “Paid in full” plus a note that all payments were cleared.
 
 Happy budgeting with your broke college friends!
