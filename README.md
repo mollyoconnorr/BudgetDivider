@@ -69,3 +69,7 @@ go run .
 3. Settled items hide the payment list and instead show “Paid in full” plus a note that all payments were cleared.
 
 Happy budgeting with your broke college friends!
+
+## References
+   - [Go wiki](https://go.dev/doc/articles/wiki/) tutorial helped bootstrap the basic web server flow and template rendering.
+   - ChatGPT assisted with Go syntax polishing and clarifying the settlement-matching logic so the math section stayed accurate.
