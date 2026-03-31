@@ -100,7 +100,8 @@ func indexHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc 
 			log.Printf("encoding item costs: %v", err)
 			return
 		}
-		appData := template.JS(fmt.Sprintf("{\"participants\": %s, \"itemCosts\": %s}", participantJSON, costJSON))
+		participantsJS := template.JS(participantJSON)
+		itemCostsJS := template.JS(costJSON)
 
 		paymentsByItem := map[int][]Payment{}
 		for _, p := range payments {
@@ -113,7 +114,7 @@ func indexHandler(store *sqliteStore, tmpl *template.Template) http.HandlerFunc 
 		activeTab := normalizeTab(r.URL.Query().Get("tab"))
 		warning := r.URL.Query().Get("userWarning")
 
-		renderTemplate(w, tmpl, items, paymentsByItem, balances, settlements, users, warning, activeTab, appData)
+		renderTemplate(w, tmpl, items, paymentsByItem, balances, settlements, users, warning, activeTab, participantsJS, itemCostsJS)
 	}
 }
 
@@ -437,7 +438,7 @@ func userDeleteHandler(store *sqliteStore) http.HandlerFunc {
  * renderTemplate assembles the dashboard view model and executes the
  * template with pre-computed balances, settlements, participants, and costs.
  */
-func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Item, payments map[int][]Payment, balances map[string]float64, settlements []string, users []User, warning string, activeTab string, appData template.JS) {
+func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Item, payments map[int][]Payment, balances map[string]float64, settlements []string, users []User, warning string, activeTab string, participants template.JS, itemCosts template.JS) {
 	balanceList := make([]struct {
 		Name    string
 		Balance float64
@@ -458,21 +459,23 @@ func renderTemplate(w http.ResponseWriter, tmpl *template.Template, items []*Ite
 			Name    string
 			Balance float64
 		}
-		Settlements []string
-		Users       []User
-		UserWarning string
-		ActiveTab   string
-		AppData     template.JS
+		Settlements  []string
+		Users        []User
+		UserWarning  string
+		ActiveTab    string
+		Participants template.JS
+		ItemCosts    template.JS
 	}{
-		Items:       items,
-		Payments:    payments,
-		Balances:    balances,
-		BalanceList: balanceList,
-		Settlements: settlements,
-		Users:       users,
-		UserWarning: warning,
-		ActiveTab:   activeTab,
-		AppData:     appData,
+		Items:        items,
+		Payments:     payments,
+		Balances:     balances,
+		BalanceList:  balanceList,
+		Settlements:  settlements,
+		Users:        users,
+		UserWarning:  warning,
+		ActiveTab:    activeTab,
+		Participants: participants,
+		ItemCosts:    itemCosts,
 	}
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Printf("template error: %v", err)
