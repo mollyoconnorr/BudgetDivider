@@ -1,4 +1,4 @@
-# Budget Divider
+# Split Smart
 
 Budget Divider is a single-binary Go web app that lets small groups track shared expenses, record who paid what, and compute exactly who owes whom so your broke college friends stay on the same page. The server uses SQLite for persistence, the UI lives in static templates with dedicated CSS/JS files, and the math looks at each item, participants, and payments to generate settlement suggestions.
 
